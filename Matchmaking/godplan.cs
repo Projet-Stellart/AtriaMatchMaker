@@ -5,7 +5,9 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 
-class MatchMaker
+namespace Matchmaking;
+
+public class MatchMaker
 {
     private static int _nextServerId = 1;
     private static Dictionary<int, ServerInfo> _servers = new Dictionary<int, ServerInfo>();
@@ -42,15 +44,15 @@ class MatchMaker
             switch (command)
             {
                 case "server created":
-                {
-                    int maxPlayers = int.Parse(parts[2]);
-                    int serverId = RegisterServer(maxPlayers);
-                    SendMessage(stream, $"server update {serverId} nbPlayers=0");
-                    break;
-                }
+                    {
+                        int maxPlayers = int.Parse(parts[2]);
+                        int serverId = RegisterServer(maxPlayers);
+                        SendMessage(stream, $"server update {serverId} nbPlayers=0");
+                        break;
+                    }
                 case "server update":
-                {
-                    int serverId = int.Parse(parts[1]);
-                    int nbPlayers = int.Parse(parts[3]);
-                    UpdateServer(serverId, nbPlayers);
-                    break;
+                    {
+                        int serverId = int.Parse(parts[1]);
+                        int nbPlayers = int.Parse(parts[3]);
+                        UpdateServer(serverId, nbPlayers);
+                        break;
