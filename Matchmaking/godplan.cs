@@ -7,6 +7,91 @@ using System.Threading;
 
 class MatchMaker
 {
+    import socket
+import threading
+import re
+
+# Global variables for servers and clients
+servers = {}
+clients = set()
+
+def create_server(max_players):
+    server_id = len(servers) + 1
+    servers[server_id] = {'max_players': max_players, 'current_players': 0}
+    return server_id
+
+def update_server(server_id, current_players):
+    if server_id in servers:
+        servers[server_id]['current_players'] = current_players
+
+def delete_server(server_id):
+    if server_id in servers:
+        del servers[server_id]
+
+def get_available_server():
+    for server_id in servers:
+        if servers[server_id]['current_players'] < servers[server_id]['max_players']:
+            return server_id
+    return None
+
+def send_message(client, message):
+    client.send(message.encode())
+
+def handle_client(client):
+    while True:
+        try:
+            message = client.recv(1024).decode().strip()
+            if message:
+                handle_message(client, message)
+            else:
+                break
+        except Exception as e:
+            print(f'Error handling client: {e}')
+            break
+
+    # Remove the client from the clients set
+    clients.remove(client)
+    client.close()
+
+def handle_message(client, message):
+    pattern = r'server created (\d+) (\d+)|server update (\d+) (\d+)|\
+               server deleted (\d+)|client request'
+    match = re.match(pattern, message)
+
+    if match:
+        parts = match.groups()
+        action, server_id, max_players, current_players = parts
+
+        if action == 'server created':
+            server_id = create_server(int(max_players))
+            send_message(client, f'server created {server_id}'.encode())
+        elif action == 'server update':
+            update_server(int(server_id), int(current_players))
+        elif action == 'server deleted':
+            delete_server(int(server_id))
+        elif action == 'client request':
+            available_server_id = get_available_server()
+            send_message(client, f'client request {available_server_id}'.encode())
+
+def main():
+    # Implementation for creating and starting the TCP server
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind(('localhost', 12345))
+    server.listen(5)
+
+    print('Server listening on localhost:12345')
+
+    while True:
+        client, addr = server.accept()
+        print(f'New connection from {addr}')
+        clients.add(client)
+
+        # Start a new thread to handle the client
+        client_thread = threading.Thread(target=handle_client, args=(client,))
+        client_thread.start()
+
+if __name__ == '__main__':
+    main()
     private static int _nextServerId = 1;
     private static Dictionary<int, ServerInfo> _servers = new Dictionary<int, ServerInfo>();
 
