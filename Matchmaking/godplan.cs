@@ -5,7 +5,9 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 
-class MatchMaker
+namespace Matchmaking;
+
+public class MatchMaker
 {
     private Dictionary<int, ServerInfo> _servers = new Dictionary<int, ServerInfo>();
     private HashSet<TcpClient> _clients = new HashSet<TcpClient>();
