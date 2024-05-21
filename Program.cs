@@ -1,2 +1,11 @@
-﻿// See https://aka.ms/new-console-template for more information
-Console.WriteLine("Hello, World!");
+﻿using Matchmaking;
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        MatchMaker matchMaker = new MatchMaker();
+        
+        matchMaker.Start();
+    }
+}
