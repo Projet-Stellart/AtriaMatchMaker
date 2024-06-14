@@ -14,10 +14,10 @@ public class MatchMaker
 
     private int _nextServerId = 1;
 
-    private void CreateServer(int maxPlayers, TcpClient client)
+    private void CreateServer(string connectInfo, int maxPlayers, TcpClient client)
     {
         int serverId = _nextServerId++;
-        _servers[serverId] = new ServerInfo { MaxPlayers = maxPlayers, CurrentPlayers = 0 };
+        _servers[serverId] = new ServerInfo { MaxPlayers = maxPlayers, CurrentPlayers = 0, ConnectionInfo = connectInfo};
         SendMessageToClient(client, $"server created {serverId}");
         Console.WriteLine("[ServerHandler] server created: " + serverId);
     }
@@ -74,17 +74,17 @@ public class MatchMaker
         {
             case "create":
                 {
-                    if (!int.TryParse(parts[2], out int maxPlayers))
+                    if (parts.Length != 4 || !int.TryParse(parts[3], out int maxPlayers) || parts[2].Split(':').Length != 2)
                     {
                         SendMessageToClient(client, "Unvalid syntaxe");
                         return;
                     }
-                    CreateServer(maxPlayers, client);
+                    CreateServer(parts[2], maxPlayers, client);
                     break;
                 }
             case "update":
                 {
-                    if (!int.TryParse(parts[2], out int serverId))
+                    if (parts.Length != 4 || !int.TryParse(parts[2], out int serverId))
                     {
                         SendMessageToClient(client, "Unvalid syntaxe");
                         return;
@@ -99,7 +99,7 @@ public class MatchMaker
                 }
             case "delete":
                 {
-                    if (!int.TryParse(parts[2], out int serverId))
+                    if (parts.Length != 3 || !int.TryParse(parts[2], out int serverId))
                     {
                         SendMessageToClient(client, "Unvalid syntaxe");
                         return;
@@ -117,7 +117,14 @@ public class MatchMaker
             case "request":
                 {
                     int availableServerId = GetAvailableServer();
-                    SendMessageToClient(client, $"client request {availableServerId}");
+                    if (availableServerId == -1)
+                    {
+                        SendMessageToClient(client, $"client request failed");
+                    }
+                    else
+                    {
+                        SendMessageToClient(client, $"client request {_servers[availableServerId].ConnectionInfo}");
+                    }
                     Console.WriteLine("[ClientHandler] client to server: " + availableServerId);
                     break;
                 }
@@ -160,6 +167,7 @@ public class MatchMaker
     {
         public int MaxPlayers { get; set; }
         public int CurrentPlayers { get; set; }
+        public string ConnectionInfo { get; set; }
     }
 
     public void MainHandle()
@@ -182,10 +190,16 @@ public class MatchMaker
             {
                 TcpClient client = listener.AcceptTcpClient();
                 matchMaker._clients.Add(client);
-                try
+                Task.Run(() =>
                 {
-                    matchMaker.HandleMessage(client);
-                }catch (IOException e) {}
+                    try
+                    {
+                    
+                        matchMaker.HandleMessage(client);
+                    
+                    }
+                    catch (IOException e) {}
+                });
             }
         });
 
